@@ -12,6 +12,9 @@ import com.intech.cms.utils.sxssfwriter.dom.Node;
 import com.intech.cms.utils.sxssfwriter.dom.Tag;
 import com.intech.cms.utils.sxssfwriter.dom.TagNode;
 
+/**
+ * @author epotanin
+ */
 public class TagNodeFactory {
 
 	private static final String		START_NODE_PATTERN	= "^<([^ /]+)([^>]*)>$";
