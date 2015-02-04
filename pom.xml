@@ -8,7 +8,7 @@
 	<packaging>jar</packaging>
 
 	<name>xls-utils</name>
-	<url>http://maven.apache.org</url>
+	<url>https://redmine.intech-global.com/projects/web-utils/wiki/Xls-utils</url>
 	<description>Library that includes two spring view for xls templates - SXSSFSpringView and JettSpringView</description>
 
 	<properties>
