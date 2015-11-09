@@ -2,6 +2,14 @@ package com.intech.cms.utils.csvwriter;
 
 import org.supercsv.cellprocessor.ift.CellProcessor;
 
+/**
+ * Бин для настройки списка колонок при экспорте в CSV 
+ * cellProcessor - форматирование и проверка данных библиотеки Super CSV
+ * @see http://super-csv.github.io/super-csv/cell_processors.html
+ * 
+ * @author arakushin
+ *
+ */
 public class CsvReportColumnBean {
 
 	private String fieldName;	

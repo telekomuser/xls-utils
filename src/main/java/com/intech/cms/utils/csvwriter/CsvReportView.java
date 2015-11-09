@@ -15,6 +15,8 @@ import org.supercsv.io.ICsvBeanWriter;
 import org.supercsv.prefs.CsvPreference;
 
 /**
+ * Spring View для создания CSV файлов с помощью библиотеки Super CSV
+ * @see http://super-csv.github.io/super-csv/index.html
  * 
  * @author arakushin
  *
