@@ -114,12 +114,12 @@
 		<repository>
 			<id>releases</id>
 			<name>Internal Releases</name>
-			<url>http://nexus.intech-global.com/content/repositories/releases</url>
+			<url>http://nexus.intech-global.com/nexus/content/repositories/releases</url>
 		</repository>
 		<snapshotRepository>
 			<id>snapshots</id>
 			<name>Internal Snapshots</name>
-			<url>http://nexus.intech-global.com/content/repositories/snapshots</url>
+			<url>http://nexus.intech-global.com/nexus/content/repositories/snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
 
