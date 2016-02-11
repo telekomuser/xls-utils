@@ -60,9 +60,9 @@
 			<version>${org.spring.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>servlet-api</groupId>
-			<artifactId>servlet-api</artifactId>
-			<version>3.0</version>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.0.1</version>
 			<scope>provided</scope>
 		</dependency>
 
