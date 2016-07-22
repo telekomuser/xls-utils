@@ -11,7 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.view.AbstractView;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.io.CsvBeanWriter;
+import org.supercsv.io.CsvListWriter;
+import org.supercsv.io.CsvMapWriter;
 import org.supercsv.io.ICsvBeanWriter;
+import org.supercsv.io.ICsvListWriter;
+import org.supercsv.io.ICsvMapWriter;
+import org.supercsv.io.ICsvWriter;
 import org.supercsv.prefs.CsvPreference;
 
 /**
@@ -23,12 +28,14 @@ import org.supercsv.prefs.CsvPreference;
  */
 public class CsvReportView extends AbstractView {
 
+	@SuppressWarnings("unused")
 	private static final Logger	log			= LoggerFactory.getLogger(CsvReportView.class);
 	
 	private String			charset			= "windows-1251";
 	private String			filename		= "report.csv";
 	private Character		delimiterChar;
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	protected void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response)
 			throws Exception {
@@ -54,12 +61,16 @@ public class CsvReportView extends AbstractView {
 		}
 		
 		List<?> objects = (List<?>) model.get("objects");
+		String writerClassName = (String) model.get("writer");
+		if (writerClassName == null) {
+			writerClassName = "CsvBeanWriter";
+		}
 		
 		response.setCharacterEncoding(charset);
 		response.setContentType("text/csv;charset=" + charset);
 		response.setHeader("Content-disposition", "attachment; filename*=utf-8''" + filename + ";");
 
-		ICsvBeanWriter writer = null;
+		ICsvWriter writer = null;
         try {
         	
         	CsvPreference	preference	= CsvPreference.STANDARD_PREFERENCE;
@@ -67,7 +78,17 @@ public class CsvReportView extends AbstractView {
         		preference = new CsvPreference.Builder('"', delimiterChar, "\r\n").build();
         	}
         	
-			writer = new CsvBeanWriter(response.getWriter(), preference);
+        	switch (writerClassName) {
+			case "CsvListWriter":
+				writer = new CsvListWriter(response.getWriter(), preference);
+				break;
+			case "CsvMapWriter":
+				writer = new CsvMapWriter(response.getWriter(), preference);
+				break;
+			default: // CsvBeanWriter by default
+				writer = new CsvBeanWriter(response.getWriter(), preference);
+				break;
+			} 
 	
 			// header columns
 			if (headers != null){
@@ -78,13 +99,21 @@ public class CsvReportView extends AbstractView {
 			}
 			
 			// data
+			if (processors == null) {
+				processors = new CellProcessor[fields.length];
+			}			
 			for (Object obj : objects) {
-				if (processors != null) {
-					writer.write(obj, fields, processors);
-				}
-				else {
-					writer.write(obj, fields);
-				}
+	        	switch (writerClassName) {
+				case "CsvListWriter":
+					((ICsvListWriter) writer).write((List<?>)obj, processors);
+					break;
+				case "CsvMapWriter":
+					((ICsvMapWriter) writer).write((Map<String, ?>) obj, fields, processors);
+					break;
+				default: // CsvBeanWriter by default
+					((ICsvBeanWriter) writer).write(obj, fields, processors);
+					break;
+				} 
 			}
 	
         }
