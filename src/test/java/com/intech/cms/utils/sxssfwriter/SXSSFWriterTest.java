@@ -37,7 +37,7 @@ public class SXSSFWriterTest {
 		map.put("entities", testList);
 		map.put("su", new StringUtils());
 		
-		testOS1 = new FileOutputStream("/home/user/test9.xlsx");
+		testOS1 = new FileOutputStream("target/test9.xlsx");
 		
 		testIS1 = SXSSFWriterTest.class.getResourceAsStream("/test-template2.xlsx");
 		XSSFWorkbook book = (XSSFWorkbook) WorkbookFactory.create(testIS1);
