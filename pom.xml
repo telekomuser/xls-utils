@@ -4,7 +4,7 @@
 
 	<groupId>com.intech.cms.utils</groupId>
 	<artifactId>xls-utils</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>xls-utils</name>
@@ -12,30 +12,31 @@
 	<description>Library that includes two spring view for xls templates - SXSSFSpringView and JettSpringView</description>
 
 	<properties>
-		<java.version>1.7</java.version>
+		<java.version>1.8</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<slf4j.version>1.5.8</slf4j.version>
-		<log4j.version>1.2.14</log4j.version>
-		<org.spring.version>4.3.5.RELEASE</org.spring.version>
+		<slf4j.version>1.7.7</slf4j.version>
+		<log4j.version>1.2.17</log4j.version>
+		<apache.poi.version>3.16</apache.poi.version>
+		<org.spring.version>4.3.8.RELEASE</org.spring.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.9</version>
+			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
-			<version>3.15</version>
+			<version>${apache.poi.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>3.15</version>
+			<version>${apache.poi.version}</version>
 		</dependency>
 
 		<dependency>
@@ -46,22 +47,27 @@
 		<dependency>
 			<groupId>net.sf.jett</groupId>
 			<artifactId>jett-core</artifactId>
-			<version>0.7.0</version>
+			<version>0.10.0</version>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>net.sf.supercsv</groupId>
 			<artifactId>super-csv</artifactId>
-			<version>2.3.1</version>
+			<version>2.4.0</version>
+		</dependency>-->
+		<dependency>
+			<groupId>net.sf.supercsv</groupId>
+			<artifactId>super-csv-java8</artifactId>
+			<version>2.4.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jxls</groupId>
 			<artifactId>jxls</artifactId>
-			<version>2.3.0</version>
+			<version>2.4.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jxls</groupId>
 			<artifactId>jxls-poi</artifactId>
-			<version>1.0.11</version>
+			<version>1.0.12</version>
 		</dependency>
 
 		<dependency>
@@ -72,14 +78,14 @@
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
-			<version>3.0.1</version>
+			<version>3.1.0</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.3.2</version>
+			<version>3.5</version>
 		</dependency>
 
 		<dependency>
@@ -110,7 +116,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
+				<version>3.3</version>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
