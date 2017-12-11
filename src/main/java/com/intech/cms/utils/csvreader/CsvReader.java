@@ -43,8 +43,9 @@ public class CsvReader<T> {
             }
 
             reader = new CsvBeanReader(new InputStreamReader(inputStream), preference);
-            reader.getHeader(withHeader);
-
+            if(withHeader){
+                reader.getHeader(true);
+            }
             // data
             if (processors == null) {
                 processors = new CellProcessor[fields.size()];
