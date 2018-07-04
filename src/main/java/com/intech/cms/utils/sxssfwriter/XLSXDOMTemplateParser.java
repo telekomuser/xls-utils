@@ -12,6 +12,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +106,7 @@ public class XLSXDOMTemplateParser {
 
 		String stringValue = null;
 		try {
-			Cell cell = row.getCell(0, Row.RETURN_BLANK_AS_NULL);/* пустые ячейки возвращаются как null */
+			Cell cell = row.getCell(0, MissingCellPolicy.RETURN_BLANK_AS_NULL);/* пустые ячейки возвращаются как null */
 			stringValue = formatter.formatCellValue(cell);
 		}
 		catch (Exception e) {

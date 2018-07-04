@@ -1,13 +1,11 @@
 package com.intech.cms.utils.excelextractor;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PushbackInputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
-import java.util.stream.Stream.Builder;
 
 import org.apache.poi.extractor.ExtractorFactory;
 import org.apache.poi.hssf.usermodel.HSSFCell;
@@ -19,13 +17,14 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackagePart;
 import org.apache.poi.openxml4j.opc.PackageRelationshipCollection;
-import org.apache.poi.poifs.filesystem.DocumentFactoryHelper;
+import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.NPOIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRelation;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -34,27 +33,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
+
 public class ExcelExtractor {
 
+	private static final Logger log	= LoggerFactory.getLogger(ExcelExtractor.class);
+	
     private boolean withHeader = true;
+    private boolean returnEmptyCells = false;
+    private boolean returnEmptyRows  = false;
 
-    public void setWithHeader(boolean withHeader) {
+    public ExcelExtractor() {
+    	
+    }
+    
+    public ExcelExtractor(boolean withHeader, boolean returnEmptyCells, boolean returnEmptyRows) {
+		super();
+		this.withHeader = withHeader;
+		this.returnEmptyCells = returnEmptyCells;
+		this.returnEmptyRows = returnEmptyRows;
+	}
+
+	public void setWithHeader(boolean withHeader) {
         this.withHeader = withHeader;
     }
+    
+	public void setReturnEmptyCells(boolean returnEmptyCells) {
+		this.returnEmptyCells = returnEmptyCells;
+	}
 
-    private static final Logger log	= LoggerFactory.getLogger(ExcelExtractor.class);
+	public void setReturnEmptyRows(boolean returnEmptyRows) {
+		this.returnEmptyRows = returnEmptyRows;
+	}
 
-    public Stream<String[]> iterateRows(MultipartFile mp, int lineCountLimit) throws Exception {
+	public Stream<String[]> iterateRows(MultipartFile mp, int lineCountLimit) throws Exception {
 
         Stream.Builder<String[]> builder = Stream.<String[]> builder();
 
         try (InputStream is = mp.getInputStream()) {
-            PushbackInputStream pbis = new PushbackInputStream(is, 8);//!!!
+            InputStream pbis = new BufferedInputStream(is);//stream must support mark
 
-            if (NPOIFSFileSystem.hasPOIFSHeader(pbis)) {// XLS
+            if (FileMagic.valueOf(pbis) == FileMagic.OLE2) {// XLS
                 parseXLS(pbis, builder, lineCountLimit);
             }
-            else if (DocumentFactoryHelper.hasOOXMLHeader(pbis)) {// XLSX
+            else if (FileMagic.valueOf(pbis) == FileMagic.OOXML) {// XLSX
                 parseXLSX(pbis, builder, lineCountLimit);
             }
             else {
@@ -91,49 +112,51 @@ public class ExcelExtractor {
         HSSFWorkbook wb = new HSSFWorkbook(new NPOIFSFileSystem(is).getRoot(), true);
         HSSFSheet sheet = wb.getSheetAt(0);// only 1st sheet
 
-        int rn = 0 ;
         for (int j = 0; j <= sheet.getLastRowNum(); j++) {
-            HSSFRow row = sheet.getRow(j);
-            if (row == null) {
-                continue;
-            }
+        	
+        	if (withHeader && j == 0) {
+        		continue;// skip first row, as it contains column names
+        	}
 
-            if (withHeader && row.getRowNum() == 0) {
-                continue;// skip first row, as it contains column names
-            }
+			List<String> strings = new ArrayList<String>();
+			HSSFRow row = sheet.getRow(j);
+			if (row != null) {
+				for (int k = 0; k < row.getLastCellNum(); k++) {
+					HSSFCell cell = row.getCell(k);
 
-            List<String> strings = new ArrayList<String>();
-            for (int k = 0; k < row.getLastCellNum(); k++) {
-                HSSFCell cell = row.getCell(k);
-
-                if (cell == null) {
-                    //strings.add("");//do not return empty cells
-                }
-                else {
-                    switch (cell.getCellTypeEnum()) {
-                        case BLANK:
-                            // strings.add(""); //do not return empty cells
-                            break;
-                        case STRING:
-                            strings.add(cell.getRichStringCellValue().getString());
-                            break;
-                        case NUMERIC:
-                            HSSFCellStyle style = cell.getCellStyle();
-                            double nVal = cell.getNumericCellValue();
-                            short df = style.getDataFormat();
-                            String dfs = style.getDataFormatString();
-                            strings.add(_formatter.formatRawCellContents(nVal, df, dfs));
-                            break;
-                        default:
-                            throw new RuntimeException("Unexpected cell type (" + cell.getCellTypeEnum() + ")");
-                    }
-                }
-            }
-            if (!strings.isEmpty()) {//do not return empty rows
-                if (++rn>lineCountLimit) {
+					if (cell == null) {
+						if (returnEmptyCells) {
+							strings.add("");
+						}
+					} else {
+						switch (cell.getCellTypeEnum()) {
+						case BLANK:
+							if (returnEmptyCells) {
+								strings.add("");
+							}
+							break;
+						case STRING:
+							strings.add(cell.getRichStringCellValue().getString());
+							break;
+						case NUMERIC:
+							HSSFCellStyle style = cell.getCellStyle();
+							double nVal = cell.getNumericCellValue();
+							short df = style.getDataFormat();
+							String dfs = style.getDataFormatString();
+							strings.add(_formatter.formatRawCellContents(nVal, df, dfs));
+							break;
+						default:
+							throw new RuntimeException("Unexpected cell type (" + cell.getCellTypeEnum() + ")");
+						}
+					}
+				}
+			}
+            
+            if (returnEmptyRows || !strings.isEmpty()) {//do not return empty rows
+                if (j>lineCountLimit) {
                     throw new LineCountLimitExceededException(String.format("Файл не должен содержать более %d строк", lineCountLimit));
                 }
-                strings.add(0,Integer.toString(rn));// prepend row number (numbers from 1)
+                strings.add(0,Integer.toString(j+1));// prepend row number (numbers from 1)
                 builder.add(strings.toArray(sa));
             }
         }
@@ -170,49 +193,63 @@ public class ExcelExtractor {
         Sheet sh = wb.sheetIterator().next();// only 1st sheet
         XSSFSheet sheet = (XSSFSheet) sh;
 
-        int j = 0;
-        for (Object rawR : sheet) {
-
+        int lrn = sheet.getLastRowNum();
+        for (int j = 0; j<=lrn;j++) {
+        
             List<String> strings = new ArrayList<String>();
-            Row row = (Row) rawR;
-            if (withHeader && row.getRowNum() == 0) {
+            Row row = sheet.getRow(j);            
+            
+            if (withHeader && j == 0) {
                 continue;// skip first row, as it contains column names
             }
-            for (Iterator<Cell> ri = row.cellIterator(); ri.hasNext();) {
-                Cell cell = ri.next();
+            
+			if (row != null) {
+				short lcn = row.getLastCellNum();
+				if (lcn != -1) {
+					for (short colIx = 0; colIx < lcn; colIx++) {
+						Cell cell = row.getCell(colIx, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+						if (cell == null) {
+							if (returnEmptyCells) {
+								strings.add("");
+							}
+							continue;
+						}
 
-                switch (cell.getCellTypeEnum()) {
-                    case STRING:
-                        strings.add(cell.getRichStringCellValue()
-                                .getString());
-                        break;
-                    case BLANK:
-                        // strings.add(""); //do not return empty cells
-                        break;
-                    case NUMERIC:{
-                        CellStyle cs = cell.getCellStyle();
+						switch (cell.getCellTypeEnum()) {
+						case STRING:
+							strings.add(cell.getRichStringCellValue().getString());
+							break;
+						case BLANK:
+							if (returnEmptyCells) {
+								strings.add("");
+							}
+							break;
+						case NUMERIC: {
+							CellStyle cs = cell.getCellStyle();
 
-                        if (cs != null && cs.getDataFormatString() != null) {
-                            String contents = formatter.formatRawCellContents(
-                                    cell.getNumericCellValue(), cs.getDataFormat(), cs.getDataFormatString());
-                            strings.add(contents);
-                        }
-                    }
-                    break;
-                    // No supported styling applies to this cell
-                    default:
-                        String contents = ((XSSFCell)cell).getRawValue();
-                        if (contents != null) {
-                            strings.add(contents);
-                        }
-                        //throw new Exception(String.format("Cell is not text (row %d)",j));
-                }
-            }
-            if (!strings.isEmpty()) {//do not return empty rows
-                if (++j>lineCountLimit) {
+							if (cs != null && cs.getDataFormatString() != null) {
+								String contents = formatter.formatRawCellContents(cell.getNumericCellValue(),
+										cs.getDataFormat(), cs.getDataFormatString());
+								strings.add(contents);
+							}
+						}
+							break;
+						// No supported styling applies to this cell
+						default:
+							String contents = ((XSSFCell) cell).getRawValue();
+							if (contents != null) {
+								strings.add(contents);
+							}
+						}
+					}
+				}
+			}
+
+            if ( returnEmptyRows || !strings.isEmpty()) {//do not return empty rows
+                if (j>lineCountLimit) {
                     throw new LineCountLimitExceededException(String.format("Файл не должен содержать более %d строк", lineCountLimit));
                 }
-                strings.add(0,Integer.toString(j));// prepend row number (numbers from 1)
+                strings.add(0,Integer.toString(j+1));// prepend row number (numbers from 1)
                 builder.add(strings.toArray(sa));
             }
         }

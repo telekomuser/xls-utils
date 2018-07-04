@@ -4,7 +4,7 @@
 
 	<groupId>com.intech.cms.utils</groupId>
 	<artifactId>xls-utils</artifactId>
-	<version>1.0.2-SNAPSHOT</version>
+	<version>1.0.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>xls-utils</name>
@@ -16,7 +16,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<slf4j.version>1.7.7</slf4j.version>
 		<log4j.version>1.2.17</log4j.version>
-		<apache.poi.version>3.16</apache.poi.version>
+		<apache.poi.version>3.17</apache.poi.version>
 		<org.spring.version>4.3.8.RELEASE</org.spring.version>
 	</properties>
 
@@ -62,12 +62,12 @@
 		<dependency>
 			<groupId>org.jxls</groupId>
 			<artifactId>jxls</artifactId>
-			<version>2.4.0</version>
+			<version>2.4.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jxls</groupId>
 			<artifactId>jxls-poi</artifactId>
-			<version>1.0.12</version>
+			<version>1.0.15</version>
 		</dependency>
 
 		<dependency>
@@ -106,7 +106,12 @@
 			<version>${log4j.version}</version>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+		    <groupId>org.springframework</groupId>
+		    <artifactId>spring-test</artifactId>
+		    <version>${org.spring.version}</version>
+		    <scope>test</scope>
+		</dependency>
 
 	</dependencies>
 
