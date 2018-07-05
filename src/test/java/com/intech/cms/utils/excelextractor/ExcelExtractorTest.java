@@ -15,30 +15,32 @@ public class ExcelExtractorTest {
 	public void testIterateRowsXLSX() throws Exception {
 		MultipartFile mp = new MockMultipartFile("mock",ExcelExtractorTest.class.getResourceAsStream("/test-extract1.xlsx"));
 		ExcelExtractor ex = new ExcelExtractor();
+		ex.setDateFormat("dd-MM-YYYY");
 				
-		test(ex,mp,false,false,false,"[1, c1][3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,false,false,true, "[1, c1][2][3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,false,true, false,"[1, , , c1][3, a3, b3, c3, d3][4, a4, , c4, d4]");
-		test(ex,mp,false,true, true, "[1, , , c1][2][3, a3, b3, c3, d3][4, a4, , c4, d4]");
-		test(ex,mp,true, false,false,"[3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,true, false,true, "[2][3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,true, true, false,"[3, a3, b3, c3, d3][4, a4, , c4, d4]");
-		test(ex,mp,true, true, true, "[2][3, a3, b3, c3, d3][4, a4, , c4, d4]");
+		test(ex,mp,false,false,false,"[1, c1][3, a3, b3, c3, d3][4, 01-06-2018, c4, d4]");
+		test(ex,mp,false,false,true, "[1, c1][2][3, a3, b3, c3, d3][4, 01-06-2018, c4, d4]");
+		test(ex,mp,false,true, false,"[1, , , c1][3, a3, b3, c3, d3][4, 01-06-2018, , c4, d4]");
+		test(ex,mp,false,true, true, "[1, , , c1][2][3, a3, b3, c3, d3][4, 01-06-2018, , c4, d4]");
+		test(ex,mp,true, false,false,"[3, a3, b3, c3, d3][4, 01-06-2018, c4, d4]");
+		test(ex,mp,true, false,true, "[2][3, a3, b3, c3, d3][4, 01-06-2018, c4, d4]");
+		test(ex,mp,true, true, false,"[3, a3, b3, c3, d3][4, 01-06-2018, , c4, d4]");
+		test(ex,mp,true, true, true, "[2][3, a3, b3, c3, d3][4, 01-06-2018, , c4, d4]");
 	}
 	
 	@Test
 	public void testIterateRowsXLS() throws Exception {
 		MultipartFile mp = new MockMultipartFile("mock",ExcelExtractorTest.class.getResourceAsStream("/test-extract1.xls"));
 		ExcelExtractor ex = new ExcelExtractor();
+		ex.setDateFormat("dd_MM_YYYY");
 				
-		test(ex,mp,false,false,false,"[1, c1][3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,false,false,true, "[1, c1][2][3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,false,true, false,"[1, , , c1][3, a3, b3, c3, d3][4, a4, , c4, d4]");
-		test(ex,mp,false,true, true, "[1, , , c1][2][3, a3, b3, c3, d3][4, a4, , c4, d4]");
-		test(ex,mp,true, false,false,"[3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,true, false,true, "[2][3, a3, b3, c3, d3][4, a4, c4, d4]");
-		test(ex,mp,true, true, false,"[3, a3, b3, c3, d3][4, a4, , c4, d4]");
-		test(ex,mp,true, true, true, "[2][3, a3, b3, c3, d3][4, a4, , c4, d4]");
+		test(ex,mp,false,false,false,"[1, c1][3, a3, b3, c3, d3][4, 13_06_2018, c4, d4]");
+		test(ex,mp,false,false,true, "[1, c1][2][3, a3, b3, c3, d3][4, 13_06_2018, c4, d4]");
+		test(ex,mp,false,true, false,"[1, , , c1][3, a3, b3, c3, d3][4, 13_06_2018, , c4, d4]");
+		test(ex,mp,false,true, true, "[1, , , c1][2][3, a3, b3, c3, d3][4, 13_06_2018, , c4, d4]");
+		test(ex,mp,true, false,false,"[3, a3, b3, c3, d3][4, 13_06_2018, c4, d4]");
+		test(ex,mp,true, false,true, "[2][3, a3, b3, c3, d3][4, 13_06_2018, c4, d4]");
+		test(ex,mp,true, true, false,"[3, a3, b3, c3, d3][4, 13_06_2018, , c4, d4]");
+		test(ex,mp,true, true, true, "[2][3, a3, b3, c3, d3][4, 13_06_2018, , c4, d4]");
 	}
 	
 	

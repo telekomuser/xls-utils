@@ -3,7 +3,11 @@ package com.intech.cms.utils.excelextractor;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -22,6 +26,7 @@ import org.apache.poi.poifs.filesystem.NPOIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
@@ -38,9 +43,11 @@ public class ExcelExtractor {
 
 	private static final Logger log	= LoggerFactory.getLogger(ExcelExtractor.class);
 	
-    private boolean withHeader = true;
-    private boolean returnEmptyCells = false;
-    private boolean returnEmptyRows  = false;
+	private boolean withHeader = true;
+	private boolean returnEmptyCells = false;
+	private boolean returnEmptyRows = false;
+	private String dateFormat = "dd/MM/yyyy HH:mm:ss";
+	private DateTimeFormatter dformatter = DateTimeFormatter.ofPattern(dateFormat);
 
     public ExcelExtractor() {
     	
@@ -63,6 +70,11 @@ public class ExcelExtractor {
 
 	public void setReturnEmptyRows(boolean returnEmptyRows) {
 		this.returnEmptyRows = returnEmptyRows;
+	}
+	
+	public void setDateFormat(String dateFormat) {
+		this.dateFormat = dateFormat;
+		this.dformatter = DateTimeFormatter.ofPattern(dateFormat);
 	}
 
 	public Stream<String[]> iterateRows(MultipartFile mp, int lineCountLimit) throws Exception {
@@ -139,11 +151,18 @@ public class ExcelExtractor {
 							strings.add(cell.getRichStringCellValue().getString());
 							break;
 						case NUMERIC:
-							HSSFCellStyle style = cell.getCellStyle();
 							double nVal = cell.getNumericCellValue();
-							short df = style.getDataFormat();
-							String dfs = style.getDataFormatString();
-							strings.add(_formatter.formatRawCellContents(nVal, df, dfs));
+							if (DateUtil.isCellDateFormatted(cell)) {//dates
+								Calendar cln = DateUtil.getJavaCalendar(nVal);
+								LocalDateTime ldt = LocalDateTime.ofInstant(cln.toInstant(),ZoneId.systemDefault());
+								strings.add(ldt.format(dformatter));
+							}
+							else {//numbers
+								HSSFCellStyle style = cell.getCellStyle();
+								short df = style.getDataFormat();
+								String dfs = style.getDataFormatString();
+								strings.add(_formatter.formatRawCellContents(nVal, df, dfs));
+							}
 							break;
 						default:
 							throw new RuntimeException("Unexpected cell type (" + cell.getCellTypeEnum() + ")");
@@ -225,12 +244,19 @@ public class ExcelExtractor {
 							}
 							break;
 						case NUMERIC: {
-							CellStyle cs = cell.getCellStyle();
-
-							if (cs != null && cs.getDataFormatString() != null) {
-								String contents = formatter.formatRawCellContents(cell.getNumericCellValue(),
-										cs.getDataFormat(), cs.getDataFormatString());
-								strings.add(contents);
+							if (DateUtil.isCellDateFormatted(cell)) {//dates
+								Calendar cln = DateUtil.getJavaCalendar(cell.getNumericCellValue());
+								LocalDateTime ldt = LocalDateTime.ofInstant(cln.toInstant(),ZoneId.systemDefault());
+								strings.add(ldt.format(dformatter));
+							}
+							else {//numbers
+								CellStyle cs = cell.getCellStyle();
+								
+								if (cs != null && cs.getDataFormatString() != null) {
+									String contents = formatter.formatRawCellContents(cell.getNumericCellValue(),
+											cs.getDataFormat(), cs.getDataFormatString());
+									strings.add(contents);
+								}
 							}
 						}
 							break;
@@ -255,7 +281,7 @@ public class ExcelExtractor {
         }
     }
 
-    @SuppressWarnings("serial")
+	@SuppressWarnings("serial")
     public static class LineCountLimitExceededException extends Exception {
 
         public LineCountLimitExceededException(String msg) {
