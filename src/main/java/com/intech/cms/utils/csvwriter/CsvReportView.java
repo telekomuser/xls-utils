@@ -43,6 +43,7 @@ public class CsvReportView extends AbstractView {
 		String[] headers = null;
 		String[] fields = null;
 		CellProcessor[] processors = null;
+		boolean noHeaders = Boolean.TRUE.equals(model.get("no_headers"));
 		List<CsvReportColumnBean> columns = (List<CsvReportColumnBean>) model.get("columns");
 		if (columns == null) {
 			headers = (String[]) model.get("headers");
@@ -91,11 +92,11 @@ public class CsvReportView extends AbstractView {
 			} 
 	
 			// header columns
-			if (headers != null){
+			if (headers != null && !noHeaders){
 				writer.writeHeader(headers);
 			} 
 			else {
-				writer.writeHeader(fields);
+				if (!noHeaders) writer.writeHeader(fields);
 			}
 			
 			// data
