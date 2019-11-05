@@ -1,7 +1,11 @@
 package com.intech.cms.utils.csvwriter;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,7 +25,7 @@ import org.supercsv.prefs.CsvPreference;
 
 /**
  * Spring View для создания CSV файлов с помощью библиотеки Super CSV
- * @see http://super-csv.github.io/super-csv/index.html
+ * @see <a href="http://super-csv.github.io/super-csv/index.html">Super-CSV</a>
  * 
  * @author arakushin
  *
@@ -34,95 +38,111 @@ public class CsvReportView extends AbstractView {
 	private String			charset			= "windows-1251";
 	private String			filename		= "report.csv";
 	private Character		delimiterChar;
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response)
 			throws Exception {
-		
-		String[] headers = null;
-		String[] fields = null;
-		CellProcessor[] processors = null;
+
 		boolean noHeaders = Boolean.TRUE.equals(model.get("no_headers"));
-		List<CsvReportColumnBean> columns = (List<CsvReportColumnBean>) model.get("columns");
-		if (columns == null) {
-			headers = (String[]) model.get("headers");
-			fields = (String[]) model.get("fields");
-			processors = (CellProcessor[]) model.get("processors");
-		}
-		else {
-			headers = new String[columns.size()];
-			fields = new String[columns.size()];
-			processors = new CellProcessor[columns.size()];
-			for (int i = 0; i < columns.size(); i++) {
-				headers[i] = columns.get(i).getCaption();
-				fields[i] = columns.get(i).getFieldName();
-				processors[i] = columns.get(i).getCellProcessor();
-			}
-		}
-		
-		List<?> objects = (List<?>) model.get("objects");
-		String writerClassName = (String) model.get("writer");
-		if (writerClassName == null) {
-			writerClassName = "CsvBeanWriter";
-		}
-		
+
+		//we need these finals for silly lambda java restriction
+		final String[] fields = fieldsFromModel(model);
+		final CellProcessor[] processors = cellProcessorsFromModel(model,fields.length) ;
+
 		response.setCharacterEncoding(charset);
 		response.setContentType("text/csv;charset=" + charset);
 		response.setHeader("Content-disposition", "attachment; filename*=utf-8''" + filename + ";");
 
-		ICsvWriter writer = null;
-        try {
-        	
-        	CsvPreference	preference	= CsvPreference.STANDARD_PREFERENCE;
-        	if (delimiterChar != null) {
-        		preference = new CsvPreference.Builder('"', delimiterChar, "\r\n").build();
-        	}
-        	
-        	switch (writerClassName) {
-			case "CsvListWriter":
-				writer = new CsvListWriter(response.getWriter(), preference);
-				break;
-			case "CsvMapWriter":
-				writer = new CsvMapWriter(response.getWriter(), preference);
-				break;
-			default: // CsvBeanWriter by default
-				writer = new CsvBeanWriter(response.getWriter(), preference);
-				break;
-			} 
-	
-			// header columns
-			if (headers != null && !noHeaders){
-				writer.writeHeader(headers);
-			} 
-			else {
-				if (!noHeaders) writer.writeHeader(fields);
+        try (ICsvWriter writer = writerFromModel(model,response.getWriter())) {
+
+			if (!noHeaders){ // header columns
+				String[] headers = headersFromModel(model);
+				writer.writeHeader(headers == null ? fields : headers);
 			}
-			
-			// data
-			if (processors == null) {
-				processors = new CellProcessor[fields.length];
-			}			
-			for (Object obj : objects) {
-	        	switch (writerClassName) {
-				case "CsvListWriter":
-					((ICsvListWriter) writer).write((List<?>)obj, processors);
-					break;
-				case "CsvMapWriter":
-					((ICsvMapWriter) writer).write((Map<String, ?>) obj, fields, processors);
-					break;
-				default: // CsvBeanWriter by default
-					((ICsvBeanWriter) writer).write(obj, fields, processors);
-					break;
-				} 
+
+			// data should be Stream or Iterable
+			Object objects = model.get("objects");
+			if (!(objects instanceof Stream) && !(objects instanceof Iterable)){
+				throw new Exception("Only Stream or Iterable data supported");
 			}
-	
+
+			Stream stream = objects instanceof Stream
+				? (Stream) objects
+				: StreamSupport.stream(((Iterable)objects).spliterator(),false);
+
+			stream.forEach(obj->{
+				try {
+					if (writer instanceof ICsvListWriter) {
+						((ICsvListWriter) writer).write((List<?>) obj, processors);
+					}
+					else if (writer instanceof ICsvMapWriter) {
+						((ICsvMapWriter) writer).write((Map<String, ?>) obj, fields, processors);
+					}
+					else{
+						((ICsvBeanWriter) writer).write(obj, fields, processors);
+					}
+				}
+				catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+
         }
-        finally {
-	    	if( writer != null ) {
-	    		writer.close();
-	    	}
-	    }        
+	}
+
+	@SuppressWarnings("unchecked")
+	private String[] headersFromModel(Map<String, Object> model){
+		return model.containsKey("columns")
+				? ((List<CsvReportColumnBean>) model.get("columns"))
+				    .stream()
+					.map(CsvReportColumnBean::getCaption)
+					.toArray(String[]::new)
+				: (String[]) model.get("headers");
+	}
+
+	@SuppressWarnings("unchecked")
+	private String[] fieldsFromModel(Map<String, Object> model){
+		return model.containsKey("columns")
+		    ? ((List<CsvReportColumnBean>) model.get("columns"))
+				.stream()
+				.map(CsvReportColumnBean::getFieldName)
+				.toArray(String[]::new)
+			: (String[]) model.get("fields");
+	}
+
+	@SuppressWarnings("unchecked")
+	private CellProcessor[] cellProcessorsFromModel(Map<String, Object> model, int defaultLength){
+
+		CellProcessor[] pp = model.containsKey("columns")
+				? ((List<CsvReportColumnBean>) model.get("columns"))
+					.stream()
+					.map(CsvReportColumnBean::getCellProcessor)
+					.toArray(CellProcessor[]::new)
+				: (CellProcessor[]) model.get("processors");
+		return pp == null
+				? new CellProcessor[defaultLength]
+				: pp;
+	}
+
+	private ICsvWriter writerFromModel(Map<String, Object> model, Writer output){
+		CsvPreference	preference	= CsvPreference.STANDARD_PREFERENCE;
+		if (delimiterChar != null) {
+			preference = new CsvPreference.Builder('"', delimiterChar, "\r\n").build();
+		}
+
+		String writerClassName = (String) model.get("writer");
+		ICsvWriter writer;
+		if ("CsvListWriter".equals(writerClassName)) {
+			writer = new CsvListWriter(output, preference);
+		}
+		else if ("CsvMapWriter".equals(writerClassName)) {
+			writer = new CsvMapWriter(output, preference);
+		}
+		else {
+			writer = new CsvBeanWriter(output, preference);// CsvBeanWriter by default
+		}
+		return writer;
 	}
 
 	public String getCharset() {
