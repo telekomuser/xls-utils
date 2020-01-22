@@ -67,27 +67,27 @@ public class CsvReportView extends AbstractView {
 				throw new Exception("Only Stream or Iterable data supported");
 			}
 
-			Stream stream = objects instanceof Stream
-				? (Stream) objects
-				: StreamSupport.stream(((Iterable)objects).spliterator(),false);
-
-			stream.forEach(obj->{
-				try {
-					if (writer instanceof ICsvListWriter) {
-						((ICsvListWriter) writer).write((List<?>) obj, processors);
-					}
-					else if (writer instanceof ICsvMapWriter) {
-						((ICsvMapWriter) writer).write((Map<String, ?>) obj, fields, processors);
-					}
-					else{
-						((ICsvBeanWriter) writer).write(obj, fields, processors);
-					}
-				}
-				catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
-
+			try (Stream stream = objects instanceof Stream
+                    ? (Stream) objects
+                    : StreamSupport.stream(((Iterable)objects).spliterator(),false)) {
+                
+			    stream.forEach(obj->{
+                    try {
+                        if (writer instanceof ICsvListWriter) {
+                            ((ICsvListWriter) writer).write((List<?>) obj, processors);
+                        }
+                        else if (writer instanceof ICsvMapWriter) {
+                            ((ICsvMapWriter) writer).write((Map<String, ?>) obj, fields, processors);
+                        }
+                        else{
+                            ((ICsvBeanWriter) writer).write(obj, fields, processors);
+                        }
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
         }
 	}
 
