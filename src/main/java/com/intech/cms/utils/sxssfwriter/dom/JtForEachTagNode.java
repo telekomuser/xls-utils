@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.jexl2.JexlContext;
 import org.slf4j.Logger;
@@ -91,23 +93,32 @@ public class JtForEachTagNode extends AbstractTemplateNode implements WritableNo
 		JexlContext context = getJexlContext(params);
 
 		Object o = processExpression(items, params);
-		if (!(o instanceof Collection)) {
-			throw new Exception("values expression of jx:forEach tag evaluated to not Collection");
+		if (!(o instanceof Stream) && !(o instanceof Collection)) {
+			throw new Exception("values expression of jx:forEach tag evaluated to neither Collection nor Stream");
 		}
-		Collection<?> items = (Collection<?>) o;
+        
+		try (Stream stream = o instanceof Stream
+                ? (Stream) o
+                : StreamSupport.stream(((Collection) o).spliterator(),false)) {
+		    
+		    stream.forEach(colItem -> {
+		        try {
+                    context.set(var, colItem);
 
-		for (Object colItem : items) {
-			context.set(var, colItem);
-			for (Node node : subitems) {
+                    for (Node node : subitems) {
 
-				if (node instanceof WritableNode) {
-					((WritableNode) node).write(params);
-				}
-				else {
-					log.warn("Unknown child while writing JxForEachTagNode '{}', skipping", node);
-				}
-			}
-		}
+                        if (node instanceof WritableNode) {
+                            ((WritableNode) node).write(params);
+                        }
+                        else {
+                            log.warn("Unknown child while writing JxForEachTagNode '{}', skipping", node);
+                        }
+                    }
+                } catch (Exception e) {
+		            throw new RuntimeException(e);
+                }
+            });
+        }
 	}
 
 	@Override
