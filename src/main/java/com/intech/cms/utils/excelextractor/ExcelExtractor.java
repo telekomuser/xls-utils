@@ -1,8 +1,6 @@
 package com.intech.cms.utils.excelextractor;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -77,34 +75,39 @@ public class ExcelExtractor {
 		this.dformatter = DateTimeFormatter.ofPattern(dateFormat);
 	}
 
+	public Stream<String[]> iterateRows(File file, int lineCountLimit) throws Exception {
+		return iterateRows(new FileInputStream(file),lineCountLimit);
+	}
+
 	public Stream<String[]> iterateRows(MultipartFile mp, int lineCountLimit) throws Exception {
-
-        Stream.Builder<String[]> builder = Stream.<String[]> builder();
-
-        try (InputStream is = mp.getInputStream()) {
-            InputStream pbis = new BufferedInputStream(is);//stream must support mark
-
-            if (FileMagic.valueOf(pbis) == FileMagic.OLE2) {// XLS
-                parseXLS(pbis, builder, lineCountLimit);
-            }
-            else if (FileMagic.valueOf(pbis) == FileMagic.OOXML) {// XLSX
-                parseXLSX(pbis, builder, lineCountLimit);
-            }
-            else {
-                throw new IllegalArgumentException("Your InputStream was neither an OLE2 stream, nor an OOXML stream");
-            }
-            return builder.build();
-        }
-        // java.lang.IllegalArgumentException: Your InputStream was neither an OLE2 stream, nor an OOXML stream
-        catch (IllegalArgumentException e1) {
-            log.error("", e1);
-            throw new NotSupportedFileException("Неверный формат файла. Выберите файл формата xls или xlsx");
-        }
-        catch (Exception e2) {
-            log.error("", e2);
-            throw e2;
-        }
+		return iterateRows(mp.getInputStream(), lineCountLimit);
     }
+
+	private Stream<String[]> iterateRows(InputStream is, int lineCountLimit) throws Exception {
+		Stream.Builder<String[]> builder = Stream.<String[]> builder();
+
+		try (InputStream pbis = new BufferedInputStream(is)){
+			if (FileMagic.valueOf(pbis) == FileMagic.OLE2) {// XLS
+				parseXLS(pbis, builder, lineCountLimit);
+			}
+			else if (FileMagic.valueOf(pbis) == FileMagic.OOXML) {// XLSX
+				parseXLSX(pbis, builder, lineCountLimit);
+			}
+			else {
+				throw new IllegalArgumentException("Your InputStream was neither an OLE2 stream, nor an OOXML stream");
+			}
+			return builder.build();
+		}
+		// java.lang.IllegalArgumentException: Your InputStream was neither an OLE2 stream, nor an OOXML stream
+		catch (IllegalArgumentException e1) {
+			log.error("", e1);
+			throw new NotSupportedFileException("Неверный формат файла. Выберите файл формата xls или xlsx");
+		}
+		catch (Exception e2) {
+			log.error("", e2);
+			throw e2;
+		}
+	}
 
     /**
      * XLS extractor
